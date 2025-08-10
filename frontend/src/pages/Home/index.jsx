@@ -1,24 +1,37 @@
-import React, { useState } from "react";
+import axios from "axios";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import "./Home.css";
 
 const Home = () => {
-  const allPosts = Array.from({ length: 25 }, (_, index) => ({
-    id: index + 1,
-    title: `${index + 1}번째 게시글`,
-    content: `${index + 1}번째 게시글의 내용입니다.`,
-  }));
-
-  const postsPerPage = 10;
+  const [posts, setPosts] = useState([]);
+  const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const postsPerPage = 10;
 
-  // 현재 페이지에 해당하는 게시글 리스트 계산
-  const indexOfLastPost = currentPage * postsPerPage;
-  const indexOfFirstPost = indexOfLastPost - postsPerPage;
-  const currentPosts = allPosts.slice(indexOfFirstPost, indexOfLastPost);
+  const getPostList = () => {
+    axios
+      .get(`${import.meta.env.VITE_API_URL}/posts`, {
+        params: {
+          page: currentPage - 1,
+          size: postsPerPage,
+        },
+      })
+      .then((response) => {
+        console.log("게시글 가져오기 성공:", response.data.content);
+        setPosts(response.data.content);
+        setTotalPages(response.data.totalPages);
+      })
+      .catch((error) => {
+        console.error("게시글 가져오기 실패:", error);
+      });
+  };
 
-  // 전체 페이지 번호 배열 계산
-  const totalPages = Math.ceil(allPosts.length / postsPerPage);
+  useEffect(() => {
+    getPostList();
+  }, [currentPage]);
+
+  // 전체 페이지 번호 배열 생성
   const pageNumbers = Array.from(
     { length: totalPages },
     (_, index) => index + 1
@@ -33,7 +46,7 @@ const Home = () => {
     <div className="home-container">
       <h1 className="home-title">게시글 목록</h1>
       <div className="posts-list">
-        {currentPosts.map((post) => (
+        {posts.map((post) => (
           <div key={post.id} className="post-card">
             <h2 className="post-title">
               <Link to={`/post/${post.id}`}>{post.title}</Link>
